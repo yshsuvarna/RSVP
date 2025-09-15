@@ -329,7 +329,7 @@ export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPP
                     <button
                       key={idx}
                       onClick={() => jumpToChapter(idx)}
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary hover:bg-primary-foreground hover:scale-150 shadow-glow transition-all pointer-events-auto group"
+                      className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary hover:bg-primary-foreground hover:scale-150 shadow-glow transition-all pointer-events-auto group"
                       style={{ left: `${chapter.progress}%` }}
                       title={chapter.title}
                     >
