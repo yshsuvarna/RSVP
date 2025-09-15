@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Token, Chapter, getProgressPercentage } from "@/lib/text/tokenize";
 import { getPauseMultiplier } from "@/lib/util/pause";
-import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Zap, BookOpen, Eye } from "lucide-react";
+import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Zap, BookOpen, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
@@ -22,6 +22,7 @@ export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPP
   const [wpm, setWpm] = useState(300);
   const [mounted, setMounted] = useState(false);
   const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
+  const [showChapterMarkers, setShowChapterMarkers] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const progressBarRef = useRef<HTMLDivElement>(null);
 
@@ -256,7 +257,27 @@ export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPP
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>Progress</span>
-            <span>{Math.round(progress)}%</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowChapterMarkers(!showChapterMarkers)}
+                className="h-6 px-2 text-xs"
+              >
+                {showChapterMarkers ? (
+                  <>
+                    <Eye className="h-3 w-3 mr-1" />
+                    Hide Markers
+                  </>
+                ) : (
+                  <>
+                    <EyeOff className="h-3 w-3 mr-1" />
+                    Show Markers
+                  </>
+                )}
+              </Button>
+              <span>{Math.round(progress)}%</span>
+            </div>
           </div>
           
           {/* Progress bar container with hover preview */}
@@ -302,21 +323,23 @@ export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPP
               />
               
               {/* Chapter markers */}
-              <div className="absolute inset-0 pointer-events-none">
-                {chapters.map((chapter, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => jumpToChapter(idx)}
-                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary/50 hover:bg-primary hover:scale-150 hover:shadow-glow transition-all pointer-events-auto group"
-                    style={{ left: `${chapter.progress}%` }}
-                    title={chapter.title}
-                  >
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                      {chapter.title.length > 20 ? chapter.title.substring(0, 20) + '...' : chapter.title}
-                    </span>
-                  </button>
-                ))}
-              </div>
+              {showChapterMarkers && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {chapters.map((chapter, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => jumpToChapter(idx)}
+                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-primary hover:bg-primary-foreground hover:scale-150 shadow-glow transition-all pointer-events-auto group"
+                      style={{ left: `${chapter.progress}%` }}
+                      title={chapter.title}
+                    >
+                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                        {chapter.title.length > 20 ? chapter.title.substring(0, 20) + '...' : chapter.title}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             
             <Slider
