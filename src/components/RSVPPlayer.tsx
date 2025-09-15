@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 interface RSVPPlayerProps {
   tokens: Token[];
@@ -15,12 +16,14 @@ interface RSVPPlayerProps {
   onProgressChange?: (progress: number) => void;
 }
 
-export default function RSVPPlayer({ tokens, onProgressChange }: RSVPPlayerProps) {
+export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPPlayerProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [wpm, setWpm] = useState(300);
   const [mounted, setMounted] = useState(false);
+  const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressBarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -91,6 +94,50 @@ export default function RSVPPlayer({ tokens, onProgressChange }: RSVPPlayerProps
     setCurrentIndex(Math.min(tokens.length - 1, Math.max(0, newIndex)));
   };
 
+  const jumpToChapter = (chapterIndex: number) => {
+    setIsPlaying(false);
+    const chapter = chapters[chapterIndex];
+    if (chapter) {
+      setCurrentIndex(chapter.startIndex);
+    }
+  };
+
+  // Get preview text for hover
+  const getPreviewText = (percentage: number) => {
+    const index = Math.floor((percentage / 100) * tokens.length);
+    const previewStart = Math.max(0, index - 20);
+    const previewEnd = Math.min(tokens.length, index + 30);
+    
+    const previewTokens = tokens.slice(previewStart, previewEnd);
+    const currentTokenIndex = index - previewStart;
+    
+    let text = '';
+    let words: { text: string; isHighlight: boolean }[] = [];
+    
+    for (let i = 0; i < previewTokens.length; i++) {
+      const token = previewTokens[i];
+      words.push({
+        text: token.text,
+        isHighlight: i === currentTokenIndex
+      });
+    }
+    
+    return words;
+  };
+
+  const handleProgressBarHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current) return;
+    
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = (x / rect.width) * 100;
+    setHoveredPosition(Math.max(0, Math.min(100, percentage)));
+  };
+
+  const handleProgressBarLeave = () => {
+    setHoveredPosition(null);
+  };
+
   if (!mounted) {
     return (
       <div className="p-8">
@@ -140,23 +187,149 @@ export default function RSVPPlayer({ tokens, onProgressChange }: RSVPPlayerProps
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-1 bg-gradient-smooth opacity-20 blur-xl"></div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Context View */}
+        {currentToken && (
+          <Tabs defaultValue="context" className="mt-6">
+            <TabsList className="grid grid-cols-2 w-full max-w-md mx-auto bg-muted/50">
+              <TabsTrigger value="context" className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground">
+                <Eye className="h-4 w-4 mr-2" />
+                Context View
+              </TabsTrigger>
+              <TabsTrigger value="chapters" className="data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground">
+                <BookOpen className="h-4 w-4 mr-2" />
+                Chapters
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="context" className="mt-4">
+              <ScrollArea className="h-32 w-full rounded-lg bg-muted/30 p-4">
+                <div className="flex flex-wrap gap-1 text-sm leading-relaxed">
+                  {/* Show 50 words before and after current position */}
+                  {tokens.slice(Math.max(0, currentIndex - 50), currentIndex).map((token, idx) => (
+                    <span key={`before-${idx}`} className="text-muted-foreground">
+                      {token.text}
+                    </span>
+                  ))}
+                  <span className="font-bold text-primary bg-primary/20 px-1 rounded animate-pulse">
+                    {currentToken.text}
+                  </span>
+                  {tokens.slice(currentIndex + 1, Math.min(tokens.length, currentIndex + 50)).map((token, idx) => (
+                    <span key={`after-${idx}`} className="text-muted-foreground">
+                      {token.text}
+                    </span>
+                  ))}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            
+            <TabsContent value="chapters" className="mt-4">
+              <ScrollArea className="h-32 w-full rounded-lg bg-muted/30 p-2">
+                <div className="space-y-1">
+                  {chapters.map((chapter, idx) => {
+                    const isCurrentChapter = currentIndex >= chapter.startIndex && currentIndex <= chapter.endIndex;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => jumpToChapter(idx)}
+                        className={`w-full text-left px-3 py-2 rounded-lg transition-all hover:bg-accent/20 ${
+                          isCurrentChapter ? 'bg-primary/20 border-l-2 border-primary' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className={`text-sm ${isCurrentChapter ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+                            {chapter.title}
+                          </span>
+                          <Badge variant={isCurrentChapter ? "default" : "secondary"} className="text-xs">
+                            {Math.round(chapter.progress)}%
+                          </Badge>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* Progress Bar with Hover Preview */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>Progress</span>
             <span>{Math.round(progress)}%</span>
           </div>
-          <Progress 
-            value={progress} 
-            className="h-2 bg-muted/50"
-          />
-          <Slider
-            value={[progress]}
-            onValueChange={([value]) => handleJumpTo(value)}
-            max={100}
-            step={0.1}
-            className="cursor-pointer"
-          />
+          
+          {/* Progress bar container with hover preview */}
+          <div 
+            ref={progressBarRef}
+            className="relative"
+            onMouseMove={handleProgressBarHover}
+            onMouseLeave={handleProgressBarLeave}
+          >
+            {/* Hover Preview Card */}
+            {hoveredPosition !== null && (
+              <div 
+                className="absolute bottom-full mb-4 -translate-x-1/2 z-50 pointer-events-none"
+                style={{ left: `${hoveredPosition}%` }}
+              >
+                <div className="bg-card/95 backdrop-blur-xl border border-glass-border rounded-lg p-4 shadow-glow max-w-md">
+                  <div className="flex flex-wrap gap-1 text-sm">
+                    {getPreviewText(hoveredPosition).map((word, idx) => (
+                      <span
+                        key={idx}
+                        className={`${
+                          word.isHighlight 
+                            ? "font-bold text-primary bg-primary/20 px-1 rounded" 
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {word.text}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-glass-border text-xs text-muted-foreground">
+                    Position: {Math.round((hoveredPosition / 100) * tokens.length)} / {tokens.length} words
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Progress bar with chapter markers */}
+            <div className="relative">
+              <Progress 
+                value={progress} 
+                className="h-3 bg-muted/50"
+              />
+              
+              {/* Chapter markers */}
+              <div className="absolute inset-0 pointer-events-none">
+                {chapters.map((chapter, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => jumpToChapter(idx)}
+                    className="absolute top-0 h-full w-px bg-primary/30 hover:bg-primary/60 transition-all pointer-events-auto group"
+                    style={{ left: `${chapter.progress}%` }}
+                    title={chapter.title}
+                  >
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-5 w-5 rounded-full bg-primary/40 group-hover:bg-primary group-hover:shadow-glow transition-all">
+                      <div className="absolute inset-1 rounded-full bg-card"></div>
+                    </div>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                      {chapter.title.length > 20 ? chapter.title.substring(0, 20) + '...' : chapter.title}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <Slider
+              value={[progress]}
+              onValueChange={([value]) => handleJumpTo(value)}
+              max={100}
+              step={0.1}
+              className="cursor-pointer mt-2"
+            />
+          </div>
         </div>
 
         {/* Controls */}
