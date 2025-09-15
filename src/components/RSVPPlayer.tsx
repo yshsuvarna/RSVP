@@ -307,13 +307,10 @@ export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPP
                   <button
                     key={idx}
                     onClick={() => jumpToChapter(idx)}
-                    className="absolute top-0 h-full w-px bg-primary/30 hover:bg-primary/60 transition-all pointer-events-auto group"
+                    className="absolute top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary/50 hover:bg-primary hover:scale-150 hover:shadow-glow transition-all pointer-events-auto group"
                     style={{ left: `${chapter.progress}%` }}
                     title={chapter.title}
                   >
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 h-5 w-5 rounded-full bg-primary/40 group-hover:bg-primary group-hover:shadow-glow transition-all">
-                      <div className="absolute inset-1 rounded-full bg-card"></div>
-                    </div>
                     <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
                       {chapter.title.length > 20 ? chapter.title.substring(0, 20) + '...' : chapter.title}
                     </span>
