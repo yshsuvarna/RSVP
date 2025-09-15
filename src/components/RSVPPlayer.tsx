@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Token, getProgressPercentage } from "@/lib/text/tokenize";
+import { Token, Chapter, getProgressPercentage } from "@/lib/text/tokenize";
 import { getPauseMultiplier } from "@/lib/util/pause";
-import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Zap } from "lucide-react";
+import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight, Zap, BookOpen, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface RSVPPlayerProps {
   tokens: Token[];
+  chapters: Chapter[];
   onProgressChange?: (progress: number) => void;
 }
 

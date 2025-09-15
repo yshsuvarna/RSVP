@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { parseEpub, ParsedEpub } from "@/lib/epub/parseEpub";
-import { tokenizeText, Token } from "@/lib/text/tokenize";
+import { tokenizeText, Token, Chapter } from "@/lib/text/tokenize";
 import RSVPPlayer from "@/components/RSVPPlayer";
 import { BookOpen, Upload, AlertCircle, Sparkles, Zap, Target, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export default function Index() {
   const [appState, setAppState] = useState<AppState>("upload");
   const [epubData, setEpubData] = useState<ParsedEpub | null>(null);
   const [tokens, setTokens] = useState<Token[]>([]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
   const [error, setError] = useState<string>("");
   const [progress, setProgress] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -40,8 +41,9 @@ export default function Index() {
       const parsed = await parseEpub(file);
       setEpubData(parsed);
 
-      const tokenized = tokenizeText(parsed.text);
+      const { tokens: tokenized, chapters: extractedChapters } = tokenizeText(parsed.text);
       setTokens(tokenized);
+      setChapters(extractedChapters);
 
       setAppState("ready");
       toast({
@@ -89,6 +91,7 @@ export default function Index() {
     setAppState("upload");
     setEpubData(null);
     setTokens([]);
+    setChapters([]);
     setError("");
     setProgress(0);
   }, []);
@@ -316,6 +319,7 @@ export default function Index() {
             {/* RSVP Player */}
             <RSVPPlayer
               tokens={tokens}
+              chapters={chapters}
               onProgressChange={handleProgressChange}
             />
           </div>
