@@ -315,31 +315,40 @@ export default function RSVPPlayer({ tokens, chapters, onProgressChange }: RSVPP
               </div>
             )}
             
-            {/* Progress bar with chapter markers */}
+            {/* Progress bar with chapter segments */}
             <div className="relative">
-              <Progress 
-                value={progress} 
-                className="h-3 bg-muted/50"
-              />
-              
-              {/* Chapter markers */}
-              {showChapterMarkers && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {chapters.map((chapter, idx) => (
-                    <button
+              <div className="relative h-3 bg-muted/50 rounded-full overflow-hidden">
+                {/* Chapter segments */}
+                {showChapterMarkers && chapters.map((chapter, idx) => {
+                  const nextChapter = chapters[idx + 1];
+                  const width = nextChapter 
+                    ? nextChapter.progress - chapter.progress 
+                    : 100 - chapter.progress;
+                  
+                  return (
+                    <div
                       key={idx}
+                      className="absolute top-0 h-full border-l border-border/50 hover:bg-accent/10 transition-colors cursor-pointer group"
+                      style={{ 
+                        left: `${chapter.progress}%`,
+                        width: `${width}%`
+                      }}
                       onClick={() => jumpToChapter(idx)}
-                      className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary hover:bg-primary-foreground hover:scale-150 shadow-glow transition-all pointer-events-auto group"
-                      style={{ left: `${chapter.progress}%` }}
                       title={chapter.title}
                     >
-                      <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="absolute -bottom-6 left-2 text-[10px] text-muted-foreground whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity z-10">
                         {chapter.title.length > 20 ? chapter.title.substring(0, 20) + '...' : chapter.title}
                       </span>
-                    </button>
-                  ))}
-                </div>
-              )}
+                    </div>
+                  );
+                })}
+                
+                {/* Progress fill */}
+                <div 
+                  className="absolute top-0 left-0 h-full bg-primary transition-all duration-100"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
             
             <Slider
